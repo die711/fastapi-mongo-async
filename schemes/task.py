@@ -18,7 +18,7 @@ ObjectId = Annotated[str, AfterValidator(check_object_id)]
 
 
 class Task(BaseModel):
-    id: _ObjectId = Field(default_factory=_ObjectId, alias="_id")
+    id: str
     title: str = Field(min_length=5, max_length=20)
     description: str
     completed: bool = False
