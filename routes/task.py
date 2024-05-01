@@ -1,56 +1,52 @@
+from typing import List
+
 from fastapi import APIRouter, HTTPException
 
-from database.database import (
-    get_all_tasks,
-    get_one_task,
-    get_one_task_id,
-    create_task,
-    update_task,
-    delete_task
-)
+from database.task import crud
 from schemes.task import Task, UpdateTask
 
 tasks_routes = APIRouter(prefix='/api/tasks', tags=['tasks'])
 
 
-@tasks_routes.get('/')
+@tasks_routes.get('/', response_model=List[Task])
 async def get_tasks():
-    response = await get_all_tasks()
+    response = await crud.get_all_tasks()
     return response
 
 
 @tasks_routes.get('/{id}', response_model=Task)
 async def get_task(id: str):
-    response = await get_one_task_id(id)
-    if response:
+    try:
+        response = await crud.get_one_task_id(id)
         return response
-    raise HTTPException(404, f"There is no task with the id {id}")
+
+    except Exception as e:
+        raise HTTPException(404, str(e))
 
 
 @tasks_routes.post('/', response_model=Task)
-async def save_task(task: Task):
-    task_found = await get_one_task(task.title)
-    if task_found:
-        raise HTTPException(409, "Task already exists")
-    #
-    response = await create_task(task.dict())
-    if response:
+async def save_task(task: UpdateTask):
+    try:
+        response = await crud.create_task(task)
         return response
 
-    raise HTTPException(400, "Something went wrong")
+    except Exception as e:
+        raise HTTPException(400, str(e))
 
 
-@tasks_routes.put('/', response_model=Task)
+@tasks_routes.put('/{id}', response_model=Task)
 async def put_task(id: str, data: UpdateTask):
-    response = await update_task(id, data)
-    if response:
+    try:
+        response = await crud.update_task(id, data)
         return response
-    raise HTTPException(404, f"There is no task with the id {id}")
+    except Exception as e:
+        raise HTTPException(400, str(e))
 
-
-@tasks_routes.delete('/{id}')
-async def remove_task(id: str):
-    response = await delete_task(id)
-    if response:
-        return "Successfully deleted task"
-    raise HTTPException(404, f"There is no task with the id {id}")
+#
+#
+# @tasks_routes.delete('/{id}')
+# async def remove_task(id: str):
+#     response = await delete_task(id)
+#     if response:
+#         return "Successfully deleted task"
+#     raise HTTPException(404, f"There is no task with the id {id}")
