@@ -1,8 +1,10 @@
 from typing import List
 from bson import ObjectId
 
-from schemes.task import Task, UpdateTask
-from database.database import collection
+from schemes.task import Task, UpdateTask, CreateTask
+from database.database import database
+
+collection = database.tasks
 
 
 async def get_all_tasks() -> List[Task]:
@@ -19,16 +21,17 @@ async def get_all_tasks() -> List[Task]:
 async def get_one_task_id(id: str) -> Task:
     task = await __get_task_by_id(id)
     if task is None:
-        raise Exception('Task not found')
+        raise Exception("Task not found")
 
     return __collection_to_schema(task)
 
 
-async def create_task(task: UpdateTask) -> Task:
+async def create_task(task: CreateTask) -> Task:
     task_db = await __get_task_by_title(task.title)
     if task_db is not None:
-        raise Exception('Task duplicated')
+        raise Exception("Task duplicated")
 
+    print(task.dict())
     new_task = await collection.insert_one(task.dict())
     created_task = await __get_task_by_id(new_task.inserted_id)
 
@@ -38,43 +41,41 @@ async def create_task(task: UpdateTask) -> Task:
 async def update_task(id: str, task: UpdateTask) -> Task:
     task_db = await __get_task_by_id(id)
     if task_db is None:
-        raise Exception('Task not found')
+        raise Exception("Task not found")
 
     if task_db["title"] != task.title:
         task_db = await __get_task_by_title(task.title)
         if task_db is not None:
-            raise Exception('Task duplicated')
+            raise Exception("Task duplicated")
 
     task_dict = {k: v for k, v in task.dict().items() if v is not None}
-    print(f'task {task_dict}')
+    # await collection.replace_one({"_id": ObjectId(id)}, task_dict)
     await collection.update_one({"_id": ObjectId(id)}, {"$set": task_dict})
     task_db = await __get_task_by_id(id)
 
     return __collection_to_schema(task_db)
 
 
-async def delete_task(id: str) -> bool:
+async def delete_task(id: str):
     task_db = await __get_task_by_id(id)
     if task_db is None:
-        raise Exception('Task not found')
+        raise Exception("Task not found")
 
     await collection.delete_one({"_id": ObjectId(id)})
 
-    return True
 
-
-def __collection_to_schema(task):
+def __collection_to_schema(task) -> Task:
     return Task(
         id=str(task['_id']),
-        title=task['title'],
-        description=task['description'],
-        completed=task['completed'],
+        title=str(task['title']),
+        description=str(task['description']),
+        completed=str(task['completed']),
     )
 
 
 async def __get_task_by_id(id: str):
-    return await collection.find_one({"_id": ObjectId(id)})
+    return await collection.find_one({'_id': ObjectId(id)})
 
 
 async def __get_task_by_title(title: str):
-    return await collection.find_one({"title": title})
+    return await collection.find_one({'title': title})

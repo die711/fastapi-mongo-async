@@ -3,7 +3,3 @@ import config
 
 client = AsyncIOMotorClient(config.MONGO_URL)
 database = client.taskdb
-collection = database.tasks
-
-
-
