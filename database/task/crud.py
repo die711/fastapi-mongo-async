@@ -30,31 +30,31 @@ async def create_task(task: UpdateTask) -> Task:
         raise Exception('Task duplicated')
 
     new_task = await collection.insert_one(task.dict())
-    print(f'new task: {new_task}')
     created_task = await __get_task_by_id(new_task.inserted_id)
-    print(created_task)
 
     return __collection_to_schema(created_task)
 
 
-async def update_task(id: str, data: UpdateTask) -> Task:
-    task_db = __get_task_by_id(id)
+async def update_task(id: str, task: UpdateTask) -> Task:
+    task_db = await __get_task_by_id(id)
     if task_db is None:
         raise Exception('Task not found')
 
-    task_db = await __get_task_by_title(data.title)
-    if task_db is not None:
-        raise Exception('Task duplicated')
+    if task_db["title"] != task.title:
+        task_db = await __get_task_by_title(task.title)
+        if task_db is not None:
+            raise Exception('Task duplicated')
 
-    # task = {k: v for k, v in data.dict().items() if v is not None}
-    await collection.update_one({"_id": ObjectId(id)}, {"$set": data})
+    task_dict = {k: v for k, v in task.dict().items() if v is not None}
+    print(f'task {task_dict}')
+    await collection.update_one({"_id": ObjectId(id)}, {"$set": task_dict})
     task_db = await __get_task_by_id(id)
 
-    return task_db
+    return __collection_to_schema(task_db)
 
 
 async def delete_task(id: str) -> bool:
-    task_db = __get_task_by_id(id)
+    task_db = await __get_task_by_id(id)
     if task_db is None:
         raise Exception('Task not found')
 
