@@ -1,7 +1,7 @@
 from motor.motor_asyncio import AsyncIOMotorClient
-from schemes.settings import get_settings
+from schemes.settings import Settings
 
-settings = get_settings()
+settings = Settings()
 
 client = AsyncIOMotorClient(settings.MONGO_URL)
 database = client.taskdb
