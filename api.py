@@ -21,7 +21,7 @@ async def say_hello(name: str, ):
 
 
 @app.get("/hello/user/{name}")
-async def say_hello(current_user: Annotated[dict, Depends(get_current_user)], ):
+async def say_hello(current_user: Annotated[dict, Depends(get_current_user)]):
     return {
         "message": f"Hello {current_user['username']}"
     }
